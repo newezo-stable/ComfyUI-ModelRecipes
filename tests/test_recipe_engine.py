@@ -114,12 +114,23 @@ class TestRecipeEngine(unittest.TestCase):
     def test_save_exact_recipe(self):
         self.store.save_exact_recipe(
             r"Anima\myNewTune.safetensors",
-            {"steps": 22, "cfg": 3.8, "sampler_name": "er_sde", "scheduler": "beta"},
+            {
+                "steps": 22,
+                "cfg": 3.8,
+                "sampler_name": "er_sde",
+                "scheduler": "beta",
+                "detailer_steps": 14,
+                "upscale_steps": 14,
+                "second_pass_steps": 11,
+            },
         )
         res = self.store.resolve(r"Anima\myNewTune.safetensors")
         self.assertEqual(res["source"], "exact_recipe")
         self.assertEqual(res["recipe"]["steps"], 22)
         self.assertEqual(res["recipe"]["cfg"], 3.8)
+        self.assertEqual(res["recipe"]["detailer_steps"], 14)
+        self.assertEqual(res["recipe"]["upscale_steps"], 14)
+        self.assertEqual(res["recipe"]["second_pass_steps"], 11)
 
 
 if __name__ == "__main__":

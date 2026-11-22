@@ -84,6 +84,9 @@ def _coerce_recipe_fields(raw: Dict[str, Any]) -> Dict[str, Any]:
     if sched:
         sc_low = str(sched).strip().lower()
         out["scheduler"] = SCHEDULER_ALIASES.get(sc_low, str(sched).strip())
+    for opt_int_key in ("detailer_steps", "upscale_steps", "second_pass_steps"):
+        if opt_int_key in raw and raw[opt_int_key] is not None:
+            out[opt_int_key] = int(round(float(raw[opt_int_key])))
     if raw.get("label"):
         out["label"] = str(raw["label"])
     if raw.get("notes"):

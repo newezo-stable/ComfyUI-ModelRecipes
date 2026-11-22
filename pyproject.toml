@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-model-recipes"
 description = "Auto-apply per-model Steps, CFG, Sampler, and Scheduler recipes directly onto native ComfyUI KSamplers with ComfyUI-Model-Manager .md bridge and 100% SaveImageWithMetaData compatibility."
-version = "1.0.0"
+version = "1.1.0"
 license = { file = "LICENSE" }
 dependencies = []
 

@@ -14,6 +14,9 @@ import { api } from "/scripts/api.js";
 const SETTING_AUTO_APPLY = "ModelRecipes.AutoApply";
 const SETTING_PARSE_MD = "ModelRecipes.ParseModelManagerMd";
 const SETTING_SHOW_TOAST = "ModelRecipes.ShowToasts";
+const SETTING_SYNC_DETAILER = "ModelRecipes.SyncDetailer";
+const SETTING_SYNC_TILED = "ModelRecipes.SyncTiledUpscale";
+const SETTING_SYNC_SECOND_PASS = "ModelRecipes.SyncSecondPass";
 
 const LOADER_WIDGETS = {
   UNETLoader: { widget: "unet_name", folder: "diffusion_models" },
@@ -33,6 +36,9 @@ const state = {
   autoApply: true,
   parseMd: true,
   showToasts: true,
+  syncDetailer: true,
+  syncTiledUpscale: true,
+  syncSecondPass: true,
   configuring: false,
   configureGuardUntil: 0,
   toolbarBtn: null,
@@ -275,8 +281,14 @@ function findModularSamplerTargets(loaderNode) {
   return { samplerSelect, basicScheduler, cfgGuider };
 }
 
+function isInputLinked(node, widgetName) {
+  const inp = node?.inputs?.find((i) => i.name === widgetName);
+  return !!(inp && inp.link != null);
+}
+
 function setWidgetSafe(node, widgetName, value) {
   if (value === undefined || value === null) return false;
+  if (isInputLinked(node, widgetName)) return false;
   const w = getWidget(node, widgetName);
   if (!w) return false;
 
@@ -293,6 +305,49 @@ function setWidgetSafe(node, widgetName, value) {
     } catch (_) {}
   }
   return true;
+}
+
+function findSecondaryTargets(loaderNode, primaryKs) {
+  const allNodes = app.graph?._nodes || [];
+  const downstream = findDownstreamNodes(loaderNode, 24);
+  const downstreamIds = new Set(downstream.map((n) => n.id));
+
+  // 1. Detailer Config (rgthree KSampler Config feeds all FaceDetailerPipes centrally)
+  const detailerConfigs = allNodes.filter((n) => n.type === "KSampler Config (rgthree)");
+  // Fallback: standalone FaceDetailer nodes if no central KSampler Config exists
+  const standaloneDetailers =
+    detailerConfigs.length === 0
+      ? downstream.filter((n) => n.type === "FaceDetailer" || n.type === "FaceDetailerPipe")
+      : [];
+
+  // 2. Tiled Upscalers (UltimateSDUpscale / UltimateSDUpscaleNoUpscale — active or bypassed)
+  const tiledTypes = new Set(["UltimateSDUpscale", "UltimateSDUpscaleNoUpscale"]);
+  let tiledUpscalers = downstream.filter((n) => tiledTypes.has(n.type));
+  if (tiledUpscalers.length === 0) {
+    tiledUpscalers = allNodes.filter((n) => tiledTypes.has(n.type));
+  }
+
+  // 3. KSampler 2nd Pass / Refiner (downstream KSamplers other than primary — active or bypassed)
+  const secondPassSamplers = allNodes.filter((n) => {
+    if (n.type !== "KSampler" && n.type !== "KSamplerAdvanced") return false;
+    if (primaryKs && n.id === primaryKs.id) return false;
+    if (!downstreamIds.has(n.id)) return false;
+    const title = (n.title || "").toLowerCase();
+    const denoiseW = getWidget(n, "denoise");
+    const isRefiner =
+      title.includes("2nd pass") ||
+      title.includes("refiner") ||
+      title.includes("hires") ||
+      (denoiseW && Number(denoiseW.value) < 0.99);
+    return isRefiner;
+  });
+
+  return { detailerConfigs, standaloneDetailers, tiledUpscalers, secondPassSamplers };
+}
+
+function scaledSteps(baseSteps, ratio, minSteps = 5) {
+  if (baseSteps === undefined || baseSteps === null) return undefined;
+  return Math.max(minSteps, Math.round(Number(baseSteps) * ratio));
 }
 
 function readSamplerValues(loaderNode) {
@@ -380,11 +435,63 @@ async function applyRecipeForLoader(loaderNode, manualTrigger = false) {
       return;
     }
 
+    // Sync secondary stages (Detailer Config 60%, Tiled Upscaler 60%, 2nd Pass 50%; denoise untouched!)
+    const syncedExtras = [];
+    const secondary = findSecondaryTargets(loaderNode, ks);
+
+    if (state.syncDetailer) {
+      const detSteps = r.detailer_steps ?? scaledSteps(r.steps, 0.6, 5);
+      let detHit = false;
+      for (const dc of secondary.detailerConfigs) {
+        const s1 = setWidgetSafe(dc, "steps_total", detSteps);
+        const s2 = setWidgetSafe(dc, "refiner_step", detSteps);
+        const s3 = setWidgetSafe(dc, "cfg", r.cfg);
+        const s4 = setWidgetSafe(dc, "sampler_name", r.sampler_name);
+        const s5 = setWidgetSafe(dc, "scheduler", r.scheduler);
+        if (s1 || s2 || s3 || s4 || s5) detHit = true;
+      }
+      for (const fd of secondary.standaloneDetailers) {
+        const s1 = setWidgetSafe(fd, "steps", detSteps);
+        const s2 = setWidgetSafe(fd, "cfg", r.cfg);
+        const s3 = setWidgetSafe(fd, "sampler_name", r.sampler_name);
+        const s4 = setWidgetSafe(fd, "scheduler", r.scheduler);
+        if (s1 || s2 || s3 || s4) detHit = true;
+      }
+      if (detHit) syncedExtras.push(`Detailer ${detSteps}st`);
+    }
+
+    if (state.syncTiledUpscale) {
+      const upSteps = r.upscale_steps ?? scaledSteps(r.steps, 0.6, 5);
+      let upHit = false;
+      for (const tu of secondary.tiledUpscalers) {
+        const s1 = setWidgetSafe(tu, "steps", upSteps);
+        const s2 = setWidgetSafe(tu, "cfg", r.cfg);
+        const s3 = setWidgetSafe(tu, "sampler_name", r.sampler_name);
+        const s4 = setWidgetSafe(tu, "scheduler", r.scheduler);
+        if (s1 || s2 || s3 || s4) upHit = true;
+      }
+      if (upHit) syncedExtras.push(`Tiled ${upSteps}st`);
+    }
+
+    if (state.syncSecondPass) {
+      const p2Steps = r.second_pass_steps ?? scaledSteps(r.steps, 0.5, 5);
+      let p2Hit = false;
+      for (const p2 of secondary.secondPassSamplers) {
+        const s1 = setWidgetSafe(p2, "steps", p2Steps);
+        const s2 = setWidgetSafe(p2, "cfg", r.cfg);
+        const s3 = setWidgetSafe(p2, "sampler_name", r.sampler_name);
+        const s4 = setWidgetSafe(p2, "scheduler", r.scheduler);
+        if (s1 || s2 || s3 || s4) p2Hit = true;
+      }
+      if (p2Hit) syncedExtras.push(`2nd Pass ${p2Steps}st`);
+    }
+
     app.graph?.setDirtyCanvas?.(true, true);
 
     const srcLabel = SOURCE_LABELS[data.source] || data.source;
     const title = `Recipe (${srcLabel}): ${r.label || data.matched_key}`;
-    const summary = applied.join(" · ") + (r.notes ? ` — ${r.notes}` : "");
+    const extraStr = syncedExtras.length ? ` [+ ${syncedExtras.join(" · ")}]` : "";
+    const summary = applied.join(" · ") + extraStr + (r.notes ? ` — ${r.notes}` : "");
     showToast(title, summary, "info");
   } catch (err) {
     console.warn("[ModelRecipes] Failed to resolve recipe:", err);
@@ -512,6 +619,39 @@ app.registerExtension({
       },
     },
     {
+      id: SETTING_SYNC_DETAILER,
+      name: "Sync Detailer Config (60% steps, same CFG/Sampler/Scheduler)",
+      type: "boolean",
+      defaultValue: true,
+      category: ["🧪 Model Recipes", "Secondary Stages"],
+      tooltip: "Also update Detailer Config (rgthree KSampler Config) or standalone FaceDetailer nodes (uses optional `detailer_steps` or 60% of base steps, min 5).",
+      onChange: (v) => {
+        state.syncDetailer = !!v;
+      },
+    },
+    {
+      id: SETTING_SYNC_TILED,
+      name: "Sync Tiled Upscaler / UltimateSDUpscale (60% steps, denoise untouched)",
+      type: "boolean",
+      defaultValue: true,
+      category: ["🧪 Model Recipes", "Secondary Stages"],
+      tooltip: "Also update UltimateSDUpscale steps (optional `upscale_steps` or 60% of base steps, min 5), CFG, sampler and scheduler without changing denoise.",
+      onChange: (v) => {
+        state.syncTiledUpscale = !!v;
+      },
+    },
+    {
+      id: SETTING_SYNC_SECOND_PASS,
+      name: "Sync KSampler 2nd Pass / Refiner (50% steps, denoise untouched)",
+      type: "boolean",
+      defaultValue: true,
+      category: ["🧪 Model Recipes", "Secondary Stages"],
+      tooltip: "Also update 2nd Pass / Hires Refiner KSampler steps (optional `second_pass_steps` or 50% of base steps, min 5), CFG, sampler and scheduler without changing denoise.",
+      onChange: (v) => {
+        state.syncSecondPass = !!v;
+      },
+    },
+    {
       id: SETTING_SHOW_TOAST,
       name: "Show toast notification when recipe is applied",
       type: "boolean",
@@ -529,6 +669,9 @@ app.registerExtension({
       state.autoApply = s.getSettingValue(SETTING_AUTO_APPLY) ?? true;
       state.parseMd = s.getSettingValue(SETTING_PARSE_MD) ?? true;
       state.showToasts = s.getSettingValue(SETTING_SHOW_TOAST) ?? true;
+      state.syncDetailer = s.getSettingValue(SETTING_SYNC_DETAILER) ?? true;
+      state.syncTiledUpscale = s.getSettingValue(SETTING_SYNC_TILED) ?? true;
+      state.syncSecondPass = s.getSettingValue(SETTING_SYNC_SECOND_PASS) ?? true;
     }
     mountToolbarButton();
   },

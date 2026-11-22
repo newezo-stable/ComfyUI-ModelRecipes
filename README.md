@@ -9,6 +9,7 @@ Automatically apply per-model generation recipes (`steps`, `cfg`, `sampler_name`
 - **Native `ComfyUI-Model-Manager` `.md` bridge** — reads optional `recipe:` YAML frontmatter blocks from your Model Manager `.md` files (editable right inside ComfyUI Model Manager) and can automatically parse creator recommendations from downloaded CivitAI/HuggingFace `.md` descriptions as a fallback.
 - **Scalable central `model_recipes.json`** — supports exact filename matches, glob/wildcard pattern rules (so future finetune versions like `NovaAnimeAMV80` or `anima_turboV12` work automatically), and folder-based family defaults.
 - **Top-bar Toggle Button** — mounts cleanly next to `rgthree` / `Pixaroma` in ComfyUI's top toolbar (`Auto-Apply ON/OFF`, right-click to apply immediately).
+- **Automatic Secondary Stage Sync** — optionally keeps `Detailer Config` (`KSampler Config (rgthree)`, **60% steps**), `Tiled Upscaler` (`UltimateSDUpscale`, **60% steps**), and `KSampler 2nd Pass` (**50% steps**) aligned to the model's CFG, sampler, and scheduler (never touching `denoise`, and respecting optional explicit `detailer_steps`, `upscale_steps`, and `second_pass_steps` recipe keys).
 
 ## Resolution Priority
 
