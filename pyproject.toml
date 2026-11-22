@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-model-recipes"
+description = "Auto-apply per-model Steps, CFG, Sampler, and Scheduler recipes directly onto native ComfyUI KSamplers with ComfyUI-Model-Manager .md bridge and 100% SaveImageWithMetaData compatibility."
+version = "1.0.0"
+license = { file = "LICENSE" }
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/newezo-stable/ComfyUI-ModelRecipes"
+
+[tool.comfy]
+PublisherId = "newezo-stable"
+DisplayName = "ComfyUI-ModelRecipes"
+Icon = ""

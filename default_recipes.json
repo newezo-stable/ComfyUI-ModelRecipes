@@ -1,0 +1,324 @@
+{
+  "version": 1,
+  "description": "Central per-model generation recipes for ComfyUI-ModelRecipes. Priority: (1) ComfyUI-Model-Manager .md frontmatter `recipe:` block -> (2) exact -> (3) patterns -> (4) .md description auto-parser -> (5) family_defaults.",
+  "exact": {
+    "anima_turboV10.safetensors": {
+      "label": "Anima Turbo v1.0",
+      "steps": 10,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Official Anima Turbo (8-12 steps, CFG 1)"
+    },
+    "anima_turboV11.safetensors": {
+      "label": "Anima Turbo v1.1",
+      "steps": 10,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Official Anima Turbo (8-12 steps, CFG 1; euler_ancestral/beta57 also works well)"
+    },
+    "oneObsessionAnima_v50.safetensors": {
+      "label": "OneObsession Anima v5.0 (Turbo-based)",
+      "steps": 10,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Creator notes: fine-tuned on Anima-Turbo (CFG 1, 8-12 steps)"
+    },
+    "anima_aestheticV10.safetensors": {
+      "label": "Anima Aesthetic v1.0",
+      "steps": 35,
+      "cfg": 3.0,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "30-50 steps, CFG 3-5 (Aesthetic tolerates CFG 3 nicely)"
+    },
+    "anima_aestheticV11.safetensors": {
+      "label": "Anima Aesthetic v1.1",
+      "steps": 35,
+      "cfg": 3.0,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "30-50 steps, CFG 3-5 (Aesthetic tolerates CFG 3 nicely)"
+    },
+    "dasiwaAnima_obsidianArchivesV2.safetensors": {
+      "label": "Dasiwa Obsidian Archives v2 (Anima 2B)",
+      "steps": 45,
+      "cfg": 5.0,
+      "sampler_name": "euler",
+      "scheduler": "linear_quadratic",
+      "notes": "40-50 steps, CFG 4-6, euler/linear_quadratic or er_sde/simple"
+    },
+    "hassakuAnima_v11.safetensors": {
+      "label": "Hassaku Anima v1.1",
+      "steps": 25,
+      "cfg": 3.5,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "Creator favorite: 25 steps, CFG 3.5, er_sde (range 20-50 steps, CFG 3-6)"
+    },
+    "loOmaij_thread002Closer.safetensors": {
+      "label": "loOmaij Thread 002 Closer (Anima 2B)",
+      "steps": 32,
+      "cfg": 5.0,
+      "sampler_name": "er_sde",
+      "scheduler": "beta",
+      "notes": "32 steps, CFG 4-7, er_sde/beta (or euler_ancestral)"
+    },
+    "pearlyOpalAnima_v2.safetensors": {
+      "label": "Pearly Opal Anima v2",
+      "steps": 28,
+      "cfg": 5.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "20-35 steps, CFG ~5, euler/simple"
+    },
+    "PVCStyleModelMovable_anima10.safetensors": {
+      "label": "PVC Style Movable Anima 1.0",
+      "steps": 30,
+      "cfg": 5.0,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "notes": "30 steps, CFG 4-6, euler/normal"
+    },
+    "singloAnima_v2.safetensors": {
+      "label": "Singlo Anima v2",
+      "steps": 35,
+      "cfg": 4.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "30-50 steps, CFG 4-5, euler or euler_ancestral"
+    },
+    "smoothmixUltimateAnima_anima.safetensors": {
+      "label": "SmoothMix Ultimate Anima 2B",
+      "steps": 25,
+      "cfg": 4.0,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "20-30 steps, CFG 3-5, er_sde/simple or beta (avoid karras)"
+    },
+    "UnholyDesireMixDarkSerenity_V3_Anima.safetensors": {
+      "label": "Unholy Desire Mix V3 (Anima 2B)",
+      "steps": 18,
+      "cfg": 1.5,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "16+ steps (decent from 8-10), CFG 1+ (not a distilled turbo)"
+    },
+    "Anima-2.9B-preview-v1.safetensors": {
+      "label": "Anima 2.9B Preview v1",
+      "steps": 32,
+      "cfg": 4.0,
+      "sampler_name": "euler",
+      "scheduler": "sgm_uniform",
+      "notes": "28-50 steps, CFG 3.5-5, euler/sgm_uniform"
+    },
+    "AnimaNoct_V3_int8_convrot.safetensors": {
+      "label": "Anima Noct V3 (2.9B INT8)",
+      "steps": 30,
+      "cfg": 4.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "2.9B merge: 30 steps, CFG 4, euler with simple or sgm_uniform"
+    },
+    "oneObsession_anima29BV2.safetensors": {
+      "label": "OneObsession Anima 2.9B v2",
+      "steps": 30,
+      "cfg": 4.5,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "notes": "25-35 steps, CFG 3-6, euler_ancestral or euler"
+    },
+    "SmoothMix_(Anima)_2.9B.safetensors": {
+      "label": "SmoothMix Anima 2.9B",
+      "steps": 25,
+      "cfg": 4.0,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "20-30 steps, CFG 3-5, er_sde or euler_ancestral"
+    },
+    "unholyDesireMixDarkSerenity_v20Anima29B.safetensors": {
+      "label": "Unholy Desire Mix 2.9B v2",
+      "steps": 18,
+      "cfg": 1.5,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "16+ steps, CFG 1+"
+    },
+    "Ray Qwen2.1编辑强化 turbo v1 int8convrot.safetensors": {
+      "label": "Ray Qwen 2.1 Edit Turbo v1",
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Qwen 2.1 Edit-Enhanced Turbo (8 steps, CFG 1)"
+    }
+  },
+  "patterns": [
+    {
+      "label": "Anima Turbo (Pattern)",
+      "match": ["*anima*turbo*"],
+      "steps": 10,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Turbo Anima models: 8-12 steps, CFG 1"
+    },
+    {
+      "label": "Nova Anima 2.9B Series (Pattern)",
+      "match": ["*nova*29b*", "*NovaAnimeAMV*"],
+      "steps": 25,
+      "cfg": 5.0,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "notes": "All Nova 2.9B models: 20-30 steps, CFG 4-6, euler_ancestral / normal"
+    },
+    {
+      "label": "SmoothMix Anima Series (Pattern)",
+      "match": ["*smoothmix*anima*"],
+      "steps": 25,
+      "cfg": 4.0,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "20-30 steps, CFG 3-5, er_sde / simple or beta"
+    },
+    {
+      "label": "Unholy Desire Mix Anima Series (Pattern)",
+      "match": ["*unholydesiremix*anima*"],
+      "steps": 18,
+      "cfg": 1.5,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "16+ steps, CFG 1+"
+    },
+    {
+      "label": "Anima Aesthetic Series (Pattern)",
+      "match": ["*anima_aesthetic*"],
+      "steps": 35,
+      "cfg": 3.0,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "30-50 steps, CFG 3-5"
+    },
+    {
+      "label": "Qwen 2.1 Turbo (Pattern)",
+      "match": ["qwen/*turbo*", "*qwen*2.1*turbo*"],
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Qwen 2.1 Turbo variant"
+    },
+    {
+      "label": "MiniMax H3 Image (Pattern)",
+      "match": ["*minimax_h3_image*", "minimax h3/*image*"],
+      "steps": 6,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "MiniMax H3 Image: 6 steps, CFG 1, 4-16 MP"
+    },
+    {
+      "label": "Flux3 Klein Distilled (Pattern)",
+      "match": ["flux3 klein/*", "*flux3*klein*"],
+      "steps": 12,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Flux3 Klein Distilled: 12 steps, CFG 1"
+    },
+    {
+      "label": "Flux2 Klein Distilled (Pattern)",
+      "match": ["klein 9b/*", "klein 4b/*", "*flux-2-klein*", "*flux2*klein*"],
+      "steps": 4,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Flux2 Klein Distilled: 4 steps, CFG 1, FluxGuidance 3.5"
+    },
+    {
+      "label": "Z-Image Turbo (Pattern)",
+      "match": ["zit/*", "*zimage*", "*z-image*"],
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "res_multistep",
+      "scheduler": "simple",
+      "notes": "Z-Image Turbo: 8 steps, CFG 1, res_multistep / simple"
+    },
+    {
+      "label": "MOSS SFT (Pattern)",
+      "match": ["moss/*", "*moss*"],
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "MOSS SFT with 8-step DMD LoRA: 8 steps, CFG 1"
+    },
+    {
+      "label": "Krea2 Turbo (Pattern)",
+      "match": ["krea2/*", "*krea2*", "*kroma*"],
+      "steps": 8,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Krea2 Turbo: 8 steps, CFG 1"
+    }
+  ],
+  "family_defaults": [
+    {
+      "label": "Anima Turbo Default",
+      "folder_prefixes": ["Anima Turbo"],
+      "steps": 10,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Family default for Anima Turbo/"
+    },
+    {
+      "label": "Anima 2.9B Default",
+      "folder_prefixes": ["Anima 29B"],
+      "steps": 30,
+      "cfg": 4.0,
+      "sampler_name": "euler",
+      "scheduler": "sgm_uniform",
+      "notes": "Family default for Anima 29B/"
+    },
+    {
+      "label": "Anima 2B Base Default",
+      "folder_prefixes": ["Anima"],
+      "steps": 35,
+      "cfg": 4.5,
+      "sampler_name": "er_sde",
+      "scheduler": "simple",
+      "notes": "Family default for Anima 2B models (30-50 steps, CFG 4-5, er_sde)"
+    },
+    {
+      "label": "Qwen 2.1 Default",
+      "folder_prefixes": ["Qwen"],
+      "steps": 25,
+      "cfg": 3.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "notes": "Family default for Qwen 2.1 (25 steps, CFG 3)"
+    },
+    {
+      "label": "Illustrious Default",
+      "folder_prefixes": ["Illustrious"],
+      "steps": 28,
+      "cfg": 5.0,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "notes": "Family default for Illustrious XL (28 steps, CFG 5)"
+    },
+    {
+      "label": "SDXL Realistic Default",
+      "folder_prefixes": ["Base XL"],
+      "steps": 30,
+      "cfg": 4.5,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "notes": "Family default for SDXL Realistic (30 steps, CFG 4.5)"
+    }
+  ]
+}
