@@ -14,6 +14,7 @@ import { api } from "/scripts/api.js";
 const SETTING_AUTO_APPLY = "ModelRecipes.AutoApply";
 const SETTING_PARSE_MD = "ModelRecipes.ParseModelManagerMd";
 const SETTING_SHOW_TOAST = "ModelRecipes.ShowToasts";
+const SETTING_SHOW_VRAM_BTNS = "ModelRecipes.ShowVramButtons";
 const SETTING_SYNC_DETAILER = "ModelRecipes.SyncDetailer";
 const SETTING_SYNC_TILED = "ModelRecipes.SyncTiledUpscale";
 const SETTING_SYNC_SECOND_PASS = "ModelRecipes.SyncSecondPass";
@@ -36,16 +37,23 @@ const state = {
   autoApply: true,
   parseMd: true,
   showToasts: true,
+  showVramButtons: true,
   syncDetailer: true,
   syncTiledUpscale: true,
   syncSecondPass: true,
   configuring: false,
   configureGuardUntil: 0,
   toolbarBtn: null,
+  vramUnloadBtn: null,
+  vramFreeAllBtn: null,
 };
 
-// Crisp inline SVG flask/recipe icon (18x18)
+// Crisp inline SVG icons (18x18)
 const FLASK_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;display:block;"><path d="M9 3h6"/><path d="M10 3v6.5L4.8 18.2A2 2 0 0 0 6.5 21h11a2 2 0 0 0 1.7-2.8L14 9.5V3"/><path d="M8.5 14h7"/></svg>`;
+// Unload Models (outline chip/eject icon)
+const UNLOAD_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;display:block;"><path d="M5 17h14"/><path d="M12 4l6 8H6l6-8z"/></svg>`;
+// Free Model & Node Cache (broom/clean icon)
+const FREE_CACHE_SVG = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;display:block;"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>`;
 
 function injectCSS() {
   if (document.getElementById("comfyui-model-recipes-css")) return;
@@ -69,6 +77,21 @@ function injectCSS() {
     .model-recipes-btn.model-recipes-on:hover {
       background-color: #2b7a4b !important;
       filter: brightness(1.1);
+    }
+    .model-recipes-vram-btn {
+      background-color: #2a2c2e !important;
+      color: #d0d7de !important;
+      border-color: #444 !important;
+      transition: background-color 140ms ease, color 140ms ease;
+    }
+    .model-recipes-vram-btn:hover {
+      background-color: #3a3d40 !important;
+      color: #fff !important;
+    }
+    .model-recipes-vram-btn.mr-flash {
+      background-color: #2b7a4b !important;
+      color: #fff !important;
+      border-color: #36995e !important;
     }
     .model-recipes-toast {
       position: fixed;
@@ -152,11 +175,44 @@ function escapeHtml(str) {
 
 function updateToolbarButton() {
   const btn = state.toolbarBtn;
-  if (!btn) return;
-  btn.classList.toggle("model-recipes-on", state.autoApply);
-  btn.title = state.autoApply
-    ? "Model Recipes: ON — Auto-applies Steps/CFG/Sampler/Scheduler on model switch (Click to toggle · Right-click to apply now)"
-    : "Model Recipes: OFF — Click to enable auto-apply on model switch (Right-click to apply manually)";
+  if (btn) {
+    btn.classList.toggle("model-recipes-on", state.autoApply);
+    btn.title = state.autoApply
+      ? "Model Recipes: ON — Auto-applies Steps/CFG/Sampler/Scheduler on model switch (Click to toggle · Right-click to apply now)"
+      : "Model Recipes: OFF — Click to enable auto-apply on model switch (Right-click to apply manually)";
+  }
+  const showVram = state.showVramButtons ? "" : "none";
+  if (state.vramUnloadBtn) state.vramUnloadBtn.style.display = showVram;
+  if (state.vramFreeAllBtn) state.vramFreeAllBtn.style.display = showVram;
+}
+
+async function freeVram(freeExecutionCache, triggerBtn) {
+  try {
+    const res = await api.fetchApi("/free", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        unload_models: true,
+        free_memory: !!freeExecutionCache,
+      }),
+    });
+    if (!res.ok) {
+      showToast("Free VRAM failed", `HTTP ${res.status}`, "error");
+      return;
+    }
+    if (triggerBtn) {
+      triggerBtn.classList.add("mr-flash");
+      setTimeout(() => triggerBtn.classList.remove("mr-flash"), 500);
+    }
+    showToast(
+      freeExecutionCache ? "VRAM & Execution Cache freed" : "Models unloaded from VRAM",
+      freeExecutionCache
+        ? "All loaded models and cached node outputs were cleared."
+        : "Loaded models were unloaded (execution cache preserved)."
+    );
+  } catch (err) {
+    showToast("Free VRAM failed", String(err), "error");
+  }
 }
 
 function toggleAutoApply() {
@@ -199,12 +255,28 @@ function mountToolbarButton() {
     applyForActiveCanvasLoader();
   });
 
+  const unloadBtn = document.createElement("button");
+  unloadBtn.className = "comfyui-button model-recipes-vram-btn";
+  unloadBtn.title = "Unload Models (Free VRAM, keep node cache)";
+  unloadBtn.innerHTML = UNLOAD_SVG;
+  unloadBtn.addEventListener("click", () => freeVram(false, unloadBtn));
+
+  const freeAllBtn = document.createElement("button");
+  freeAllBtn.className = "comfyui-button model-recipes-vram-btn";
+  freeAllBtn.title = "Free Model & Execution Cache (Clear VRAM + Node Cache)";
+  freeAllBtn.innerHTML = FREE_CACHE_SVG;
+  freeAllBtn.addEventListener("click", () => freeVram(true, freeAllBtn));
+
   const group = document.createElement("div");
   group.className = "comfyui-button-group model-recipes-group";
   group.appendChild(btn);
+  group.appendChild(unloadBtn);
+  group.appendChild(freeAllBtn);
 
   settingsGroupEl.before(group);
   state.toolbarBtn = btn;
+  state.vramUnloadBtn = unloadBtn;
+  state.vramFreeAllBtn = freeAllBtn;
   updateToolbarButton();
 }
 
@@ -652,6 +724,18 @@ app.registerExtension({
       },
     },
     {
+      id: SETTING_SHOW_VRAM_BTNS,
+      name: "Show Unload Models & Free Cache buttons in top bar",
+      type: "boolean",
+      defaultValue: true,
+      category: ["🧪 Model Recipes", "UI"],
+      tooltip: "Adds 1-click Unload Models and Free Model & Execution Cache buttons next to the Model Recipes toolbar button.",
+      onChange: (v) => {
+        state.showVramButtons = !!v;
+        updateToolbarButton();
+      },
+    },
+    {
       id: SETTING_SHOW_TOAST,
       name: "Show toast notification when recipe is applied",
       type: "boolean",
@@ -669,6 +753,7 @@ app.registerExtension({
       state.autoApply = s.getSettingValue(SETTING_AUTO_APPLY) ?? true;
       state.parseMd = s.getSettingValue(SETTING_PARSE_MD) ?? true;
       state.showToasts = s.getSettingValue(SETTING_SHOW_TOAST) ?? true;
+      state.showVramButtons = s.getSettingValue(SETTING_SHOW_VRAM_BTNS) ?? true;
       state.syncDetailer = s.getSettingValue(SETTING_SYNC_DETAILER) ?? true;
       state.syncTiledUpscale = s.getSettingValue(SETTING_SYNC_TILED) ?? true;
       state.syncSecondPass = s.getSettingValue(SETTING_SYNC_SECOND_PASS) ?? true;
